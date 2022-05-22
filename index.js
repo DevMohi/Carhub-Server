@@ -30,6 +30,20 @@ async function run() {
             const part = await partsCollection.findOne(query)
             res.send(part)
         })
+
+        app.put('/parts/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: ObjectId(id) }
+            const options = { upsert: true };
+            const updateUser = req.body
+            const updateDoc = {
+                $set: {
+                    minOrder: updateUser.quantity
+                }
+            }
+            const result = await partsCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
     } finally {
 
     }
