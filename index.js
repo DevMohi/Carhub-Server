@@ -19,6 +19,7 @@ async function run() {
         await client.connect();
         console.log('db connected')
         const partsCollection = client.db("manufacturer").collection("parts");
+        const orderCollection = client.db("manufacturer").collection("orders");
 
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find({}).toArray()
@@ -31,19 +32,15 @@ async function run() {
             res.send(part)
         })
 
-        app.put('/parts/:id', async (req, res) => {
-            const id = req.params.id
-            const filter = { _id: ObjectId(id) }
-            const options = { upsert: true };
-            const updateUser = req.body
-            const updateDoc = {
-                $set: {
-                    minOrder: updateUser.quantity
-                }
-            }
-            const result = await partsCollection.updateOne(filter, updateDoc, options)
-            res.send(result)
+
+
+        app.post('/orders', async (req, res) => {
+            const orders = req.body;
+            const result = await orderCollection.insertOne(orders);
+            res.send(result);
         })
+
+
     } finally {
 
     }
