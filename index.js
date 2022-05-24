@@ -20,6 +20,7 @@ async function run() {
         console.log('db connected')
         const partsCollection = client.db("manufacturer").collection("parts");
         const orderCollection = client.db("manufacturer").collection("orders");
+        const reviewCollection = client.db("manufacturer").collection("review");
 
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find({}).toArray()
@@ -32,12 +33,36 @@ async function run() {
             res.send(part)
         })
 
-
+        app.get('/orders', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const orders = await orderCollection.find(query).toArray()
+            res.send(orders)
+        })
 
         app.post('/orders', async (req, res) => {
             const orders = req.body;
             const result = await orderCollection.insertOne(orders);
             res.send(result);
+        })
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: ObjectId(id) }
+            const result = await orderCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // getting reviews 
+        app.get('/review', async (req, res) => {
+            const review = await reviewCollection.find({}).toArray()
+            res.send(review)
+        })
+        app.post('/review', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result)
         })
 
 
