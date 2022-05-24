@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const query = require('express/lib/middleware/query');
 require('dotenv').config();
@@ -21,6 +22,7 @@ async function run() {
         const partsCollection = client.db("manufacturer").collection("parts");
         const orderCollection = client.db("manufacturer").collection("orders");
         const reviewCollection = client.db("manufacturer").collection("review");
+        const userCollection = client.db("manufacturer").collection("users");
 
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find({}).toArray()
@@ -33,11 +35,18 @@ async function run() {
             res.send(part)
         })
 
-        app.get('/orders', async (req, res) => {
+        app.get('/orders', verifyJWT, async (req, res) => {
             const email = req.query.email;
-            const query = { email: email }
-            const orders = await orderCollection.find(query).toArray()
-            res.send(orders)
+            const decodedEmail = req.decoded.email;
+            if (email === decodedEmail) {
+                const query = { email: email }
+                const orders = await orderCollection.find(query).toArray()
+                return res.send(orders)
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
         })
 
         app.post('/orders', async (req, res) => {
@@ -65,6 +74,38 @@ async function run() {
             res.send(result)
         })
 
+        // For keeping track of users 
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body
+            const filter = { email: email }
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: user,
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc, options);
+            // creating a token 
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ result, token })
+        })
+
+        // getting all the users to make admin
+        app.get('/user', verifyJWT, async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users);
+        })
+
+        // giving roles to admin 
+        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email }
+            const updatedDoc = {
+                $set: { role: 'admin' },
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result)
+        })
+
 
     } finally {
 
@@ -80,3 +121,18 @@ app.listen(port, () => {
     console.log(`Listening to Manufacturers Server ${port}`)
 })
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    // aita korse jeno bahirer manush keo access na pai 
+    if (!authHeader) {
+        return res.status(401).send({ message: 'Unauthorized Access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded;
+        next();
+    });
+} 
