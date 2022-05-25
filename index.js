@@ -28,6 +28,13 @@ async function run() {
             const parts = await partsCollection.find({}).toArray()
             res.send(parts)
         })
+        // admin posting productts 
+        app.post('/add-parts', async (req, res) => {
+            const parts = req.body;
+            const result = await partsCollection.insertOne(parts);
+            res.send(result);
+        })
+
         app.get('/parts/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
