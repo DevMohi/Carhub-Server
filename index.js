@@ -32,6 +32,12 @@ async function run() {
             const parts = await partsCollection.find({}).toArray()
             res.send(parts)
         })
+
+        // for manage all orders 
+        app.get('/allorder', async (req, res) => {
+            const orders = await orderCollection.find({}).toArray()
+            res.send(orders)
+        })
         // admin posting productts 
         app.post('/add-parts', async (req, res) => {
             const parts = req.body;
@@ -193,6 +199,19 @@ async function run() {
             const email = req.params.email;
             const user = await profileCollection.findOne({ email: email });
             res.send(user)
+        })
+
+        // patching shipment 
+        app.patch('/allorder/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    shipped: true,
+                }
+            }
+            const updatedBooking = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedDoc)
         })
 
     } finally {
