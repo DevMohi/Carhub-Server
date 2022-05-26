@@ -25,6 +25,8 @@ async function run() {
         const reviewCollection = client.db("manufacturer").collection("review");
         const userCollection = client.db("manufacturer").collection("users");
         const paymentCollection = client.db("manufacturer").collection("payments");
+        const profileCollection = client.db("manufacturer").collection("profile");
+
 
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find({}).toArray()
@@ -174,6 +176,24 @@ async function run() {
             });
             res.send({ clientSecret: paymentIntent.client_secret })
         });
+        // setting new users 
+        app.put('/profile/:email', async (req, res) => {
+            const email = req.params.email;
+            const profile = req.body
+            const filter = { email: email }
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: profile,
+            }
+            const result = await profileCollection.updateOne(filter, updatedDoc, options);
+            // creating a token 
+            res.send(result)
+        })
+        app.get('/profile/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await profileCollection.findOne({ email: email });
+            res.send(user)
+        })
 
     } finally {
 
